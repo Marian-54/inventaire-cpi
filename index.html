@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventaire CPI</title>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <h1>📦 Inventaire Pharmacie CPI (Connecté)</h1>
+  
+  <input type="text" id="search" placeholder="🔍 Rechercher un article..." />
+  <button onclick="viderStock()">🗑 Vider l'inventaire</button>
+  <button onclick="afficherTousQR()">📷 Voir tous les QR codes</button>
+  
+
+  <form id="addForm">
+    <input type="text" id="designation" placeholder="Désignation" required />
+    <input type="text" id="reference" placeholder="Référence" />
+    <input type="number" id="quantite" placeholder="Quantité" required />
+    <input type="number" id="seuil" placeholder="Seuil minimum" />
+    <input type="date" id="expiration" placeholder="Date d'expiration" />
+    <input type="text" id="emplacement" placeholder="Emplacement" />
+    <input type="text" id="observations" placeholder="Observations" />
+    <button type="submit">Ajouter</button>
+  </form>
+
+  
+  <div id="qrCodeContainer" style="margin:1em 0;"></div>
+  <button onclick="demarrerScan()">📷 Scanner un QR code</button>
+  <button onclick="annulerScan()" id="cancelScanBtn" style="display:none;">❌ Annuler le scan</button>
+  <video id="video" width="300" style="display:none;"></video>
+  
+
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Désignation</th><th>Quantité</th><th>Expiration</th><th>⚠️</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <script src="script.js"></script>
+</body>
+</html>
