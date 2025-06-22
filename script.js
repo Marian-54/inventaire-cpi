@@ -1,3 +1,4 @@
+// ------------ Config Firebase ------------
 const firebaseConfig = {
   apiKey: "AIzaSyBPu6XTloIwdb0K24FamK10-OHuI4fLOh8",
   authDomain: "inventaire-pharmacie.firebaseapp.com",
@@ -12,177 +13,181 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const collection = db.collection("inventaire");
 
-document.getElementById("addForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-  const docRef = await collection.add({
-    designation: designation.value,
-    reference: reference.value,
-    quantite: parseInt(quantite.value),
-    seuil: parseInt(seuil.value) || 0,
-    expiration: expiration.value,
-    emplacement: emplacement.value,
-    observations: observations.value,
-    createdAt: new Date()
-  });
-  const id = docRef.id;
-  genererQRCode(id);
-  this.reset();
+// ------------ Auth anonyme (nécessite d'activer Anonymous Auth dans Firebase) ------------
+firebase.auth().signInAnonymously().then(startApp).catch(err=>{
+  alert("Erreur d'auth Firebase : "+err.message);
 });
 
-collection.onSnapshot(snapshot => {
-  const tbody = document.getElementById("tbody");
-  tbody.innerHTML = "";
-  const aujourdHui = new Date();
-  const filtre = document.getElementById("search").value.toLowerCase();
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    const texte = [doc.id, data.designation, data.reference, data.emplacement].join(" ").toLowerCase();
-    if (!texte.includes(filtre)) return;
-    const tr = document.createElement("tr");
-    const expDate = data.expiration ? new Date(data.expiration) : null;
-    const alerte = (data.seuil && data.quantite <= data.seuil) || (expDate && expDate < aujourdHui);
-    if (alerte) tr.classList.add("alert");
-    tr.innerHTML = `
-      <td>${doc.id}</td>
-      <td>${data.designation}</td>
-      <td>${data.quantite}</td>
-      <td>${data.expiration || ""}</td>
-      <td>${alerte ? "⚠️" : ""}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-});
-
-function genererQRCode(id) {
-  const container = document.getElementById("qrCodeContainer");
-  container.innerHTML = "<strong>QR Code pour l'article ID : " + id + "</strong><br>";
-  const qr = new QRious({ element: document.createElement("canvas"), value: id, size: 150 });
-  container.appendChild(qr.element);
-}
-
-document.getElementById("search").addEventListener("input", () => {
-  collection.get().then(() => {}); 
-});
-
-
+// ------------ Variables globales ------------
 let currentStream = null;
 
-async function demarrerScan() {
-  const video = document.getElementById("video");
-  const cancelBtn = document.getElementById("cancelScanBtn");
-  const codeReader = new ZXing.BrowserQRCodeReader();
+// ------------ Start main listeners ------------
+function startApp(){
+  console.log("Connecté à Firebase, UID:", firebase.auth().currentUser.uid);
+  // Ecoute en temps réel
+  collection.onSnapshot(buildTable);
+}
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    currentStream = stream;
-    video.srcObject = stream;
-    video.setAttribute("playsinline", true);
-    await video.play();
+// ------------ Construction du tableau ------------
+function buildTable(snapshot){
+  const tbody=document.getElementById("tbody");
+  tbody.innerHTML="";
+  const today=new Date();
+  const filter=document.getElementById("search").value.toLowerCase();
 
-    video.style.display = "block";
-    cancelBtn.style.display = "inline-block";
+  snapshot.forEach(doc=>{
+    const d=doc.data();
+    const haystack=[doc.id,d.designation,d.reference,d.emplacement].join(" ").toLowerCase();
+    if(!haystack.includes(filter)) return;
 
-    const result = await codeReader.decodeOnce(video);
-    const id = result.text;
+    const tr=document.createElement("tr");
+    const exp=d.expiration?new Date(d.expiration):null;
+    const alert=(d.seuil&&d.quantite<=d.seuil)||(exp&&exp<today);
+    if(alert) tr.classList.add("alert");
+    tr.innerHTML=`
+      <td>${doc.id}</td>
+      <td>${d.designation||""}</td>
+      <td>${d.quantite||0}</td>
+      <td>${d.expiration||""}</td>
+      <td>${alert?"⚠️":""}</td>
+      <td>
+        <button onclick="afficherQR('${doc.id}','${d.designation||""}')">📷</button>
+        <button onclick="supprimerArticle('${doc.id}')">🗑</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
 
-    stream.getTracks().forEach(track => track.stop());
-    currentStream = null;
-    video.srcObject = null;
-    video.style.display = "none";
-    cancelBtn.style.display = "none";
-
-    modifierArticleParID(id);
-
-  } catch (err) {
-    console.error("Erreur scan :", err);
-    annulerScan();
-    alert("Scan annulé ou échoué.");
+// ------------ Ajouter un article ------------
+document.getElementById("addForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const obj={
+    designation:designation.value,
+    reference:reference.value,
+    quantite:parseInt(quantite.value),
+    seuil:parseInt(seuil.value)||0,
+    expiration:expiration.value,
+    emplacement:emplacement.value,
+    observations:observations.value,
+    createdAt:new Date()
+  };
+  try{
+    const docRef=await collection.add(obj);
+    genererQRCode(docRef.id,"qrCodeContainer");
+    addForm.reset();
+  }catch(err){
+    alert("Erreur ajout : "+err.message);
   }
-}
+});
 
-function annulerScan() {
-  const video = document.getElementById("video");
-  const cancelBtn = document.getElementById("cancelScanBtn");
-  if (currentStream) {
-    currentStream.getTracks().forEach(track => track.stop());
-    currentStream = null;
-  }
-  video.srcObject = null;
-  video.style.display = "none";
-  cancelBtn.style.display = "none";
-}
+// ------------ Recherche live ------------
+document.getElementById("search").addEventListener("input",()=>collection.get().then(()=>{}));
 
-function modifierArticleParID(id) {
-  collection.doc(id).get().then(doc => {
-    if (!doc.exists) {
-      alert("Article non trouvé : " + id);
-      return;
-    }
-    const data = doc.data();
-    const div = document.getElementById("qrCodeContainer");
-    div.innerHTML = `
-      <h3>Modifier l'article ${id}</h3>
-      <label>Référence : <input id="modRef" value="${data.reference || ''}"></label><br>
-      <label>Quantité : <input type="number" id="modQte" value="${data.quantite || 0}"></label><br>
-      <label>Date péremption : <input type="date" id="modExp" value="${data.expiration || ''}"></label><br>
-      <button onclick="sauvegarderModifs('${id}')">✅ Mettre à jour</button>
-    `;
+// ------------ Vider stock ------------
+function viderStock(){
+  if(!confirm("Tout effacer ?")) return;
+  collection.get().then(snap=>{
+    const batch=db.batch();
+    snap.forEach(doc=>batch.delete(doc.ref));
+    batch.commit().then(()=>alert("Inventaire vidé."));
   });
 }
 
-function sauvegarderModifs(id) {
-  const modRef = document.getElementById("modRef").value;
-  const modQte = parseInt(document.getElementById("modQte").value);
-  const modExp = document.getElementById("modExp").value;
-
-  collection.doc(id).update({
-    reference: modRef,
-    quantite: modQte,
-    expiration: modExp
-  }).then(() => {
-    alert("✅ Article mis à jour !");
-    document.getElementById("qrCodeContainer").innerHTML = "";
-  });
-}
-
-function viderStock() {
-  if (!confirm("⚠️ Es-tu sûr de vouloir supprimer tout l'inventaire ?")) return;
-  collection.get().then(snapshot => {
-    const batch = db.batch();
-    snapshot.forEach(doc => batch.delete(doc.ref));
-    batch.commit().then(() => alert("✅ Inventaire vidé."));
-  });
-}
-
-function afficherTousQR() {
-  collection.get().then(snapshot => {
-    const c = document.getElementById("qrCodeContainer");
-    c.innerHTML = "<h3>QR Codes de tous les articles</h3>";
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const div = document.createElement("div");
-      div.style.margin = "1em 0";
-      const title = document.createElement("strong");
-      title.textContent = data.designation + " (" + doc.id + ")";
-      const canvas = document.createElement("canvas");
-      new QRious({ element: canvas, value: doc.id, size: 120 });
-      div.appendChild(title);
-      div.appendChild(document.createElement("br"));
-      div.appendChild(canvas);
+// ------------ Voir tous les QR ------------
+function afficherTousQR(){
+  collection.get().then(snap=>{
+    const c=document.getElementById("qrCodeContainer");
+    c.innerHTML="<h3>Tous les QR codes</h3>";
+    snap.forEach(doc=>{
+      const d=doc.data();
+      const div=document.createElement("div");
+      div.style.margin="1em 0";
+      div.innerHTML=`<strong>${d.designation} (${doc.id})</strong><br>`;
+      const canv=document.createElement("canvas");
+      new QRious({element:canv,value:doc.id,size:120});
+      div.appendChild(canv);
       c.appendChild(div);
     });
   });
 }
 
-function supprimerArticle(id) {
-  if (!confirm("Supprimer l'article " + id + " ?")) return;
-  collection.doc(id).delete().then(() => alert("✅ Article supprimé."));
+// ------------ Afficher QR d'un article ------------
+function afficherQR(id,designation){
+  genererQRCode(id,"qrCodeContainer",designation);
 }
 
-function afficherQR(id, designation) {
-  const c = document.getElementById("qrCodeContainer");
-  c.innerHTML = "<h3>QR Code pour : " + designation + " (" + id + ")</h3>";
-  const canvas = document.createElement("canvas");
-  new QRious({ element: canvas, value: id, size: 150 });
-  c.appendChild(canvas);
+function genererQRCode(id,targetId,label){
+  const cont=document.getElementById(targetId);
+  cont.innerHTML=`<h3>QR : ${label?label+" ":""}(${id})</h3>`;
+  const canvas=document.createElement("canvas");
+  new QRious({element:canvas,value:id,size:150});
+  cont.appendChild(canvas);
+}
+
+// ------------ Supprimer un article ------------
+function supprimerArticle(id){
+  if(!confirm("Supprimer "+id+" ?")) return;
+  collection.doc(id).delete().then(()=>alert("Article supprimé."));
+}
+
+// ------------ Scan QR pour modifier ------------
+async function demarrerScan(){
+  const video=document.getElementById("video");
+  const cancelBtn=document.getElementById("cancelScanBtn");
+  const reader=new ZXing.BrowserQRCodeReader();
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    currentStream=stream;
+    video.srcObject=stream;
+    video.setAttribute("playsinline",true);
+    await video.play();
+    video.style.display="block";
+    cancelBtn.style.display="inline-block";
+
+    const res=await reader.decodeOnce(video);
+    const id=res.text;
+    annulerScan();
+    modifierArticleParID(id);
+  }catch(err){
+    console.error(err);
+    annulerScan();
+    alert("Erreur scan / annulation");
+  }
+}
+
+function annulerScan(){
+  const video=document.getElementById("video");
+  const cancelBtn=document.getElementById("cancelScanBtn");
+  if(currentStream){
+    currentStream.getTracks().forEach(t=>t.stop());
+    currentStream=null;
+  }
+  video.srcObject=null;
+  video.style.display="none";
+  cancelBtn.style.display="none";
+}
+
+// ------------ Modifier article après scan ------------
+function modifierArticleParID(id){
+  collection.doc(id).get().then(doc=>{
+    if(!doc.exists){alert("Inconnu : "+id);return;}
+    const d=doc.data();
+    const c=document.getElementById("qrCodeContainer");
+    c.innerHTML=`
+      <h3>Modifier ${id}</h3>
+      <label>Référence : <input id="modRef" value="${d.reference||""}"/></label><br>
+      <label>Quantité : <input type="number" id="modQte" value="${d.quantite||0}"/></label><br>
+      <label>Péremption : <input type="date" id="modExp" value="${d.expiration||""}"/></label><br>
+      <button onclick="sauverModifs('${id}')">✅ Mettre à jour</button>`;
+  });
+}
+
+function sauverModifs(id){
+  const ref=document.getElementById("modRef").value;
+  const qt=parseInt(document.getElementById("modQte").value);
+  const exp=document.getElementById("modExp").value;
+  collection.doc(id).update({reference:ref,quantite:qt,expiration:exp}).then(()=>{
+    alert("Article mis à jour");
+    document.getElementById("qrCodeContainer").innerHTML="";
+  });
 }
