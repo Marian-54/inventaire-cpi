@@ -1,1 +1,0 @@
-# inventaire-cpi
