@@ -1,4 +1,3 @@
-
 const firebaseConfig = {
   apiKey: "AIzaSyBPu6XTloIwdb0K24FamK10-OHuI4fLOh8",
   authDomain: "inventaire-pharmacie.firebaseapp.com",
@@ -31,7 +30,7 @@ function lancerApp() {
           <select onchange="transferer('${doc.id}', this.value)">
             <option disabled selected>➜ Transférer</option>
             <option value="secours">Inventaire Sac de Secours</option>
-<option value="oxygene">Inventaire Rack Oxygénothérapie</option>
+            <option value="oxygene">Inventaire Rack Oxygénothérapie</option>
           </select>
         </td>
       `;
@@ -81,12 +80,38 @@ function afficherTousQR() {
   });
 }
 
+let codeReader;
+async function demarrerScan() {
+  codeReader = new ZXing.BrowserQRCodeReader();
+  const videoElement = document.getElementById("video");
+  videoElement.style.display = "block";
+  document.getElementById("cancelScanBtn").style.display = "inline-block";
+  try {
+    const result = await codeReader.decodeOnceFromVideoDevice(undefined, "video");
+    stopScan();
+    modifierArticle(result.text);
+  } catch (err) {
+    alert("Erreur ou annulé");
+    stopScan();
+  }
+}
+
+function stopScan() {
+  const videoElement = document.getElementById("video");
+  if (videoElement.srcObject) {
+    videoElement.srcObject.getTracks().forEach(track => track.stop());
+    videoElement.srcObject = null;
+  }
+  videoElement.style.display = "none";
+  document.getElementById("cancelScanBtn").style.display = "none";
+}
+
 function modifierArticle(id) {
   const nvQte = prompt("Nouvelle quantité ?");
   const nvRef = prompt("Nouvelle référence ?");
   const nvDate = prompt("Nouvelle date de péremption ?");
   const nvQteMin = prompt("Nouvelle quantité minimum ?");
-  if (nvQte !== null && nvRef !== null) {
+  if (nvQte !== null) {
     collection.doc(id).update({
       quantite: parseInt(nvQte),
       reference: nvRef,
@@ -108,30 +133,4 @@ function transferer(id, cible) {
       else collection.doc(id).update({ quantite: reste });
     });
   });
-}
-
-let codeReader;
-async function demarrerScan() {
-  codeReader = new ZXing.BrowserQRCodeReader();
-  const videoElement = document.getElementById("video");
-  videoElement.style.display = "block";
-  document.getElementById("cancelScanBtn").style.display = "inline-block";
-  try {
-    const result = await codeReader.decodeOnceFromVideoDevice(undefined, "video");
-    stopScan();
-    modifierArticle(result.text); // Appelle la fonction de mise à jour
-  } catch (err) {
-    alert("Erreur ou annulation");
-    stopScan();
-  }
-}
-
-function stopScan() {
-  const videoElement = document.getElementById("video");
-  if (videoElement.srcObject) {
-    videoElement.srcObject.getTracks().forEach(track => track.stop());
-    videoElement.srcObject = null;
-  }
-  videoElement.style.display = "none";
-  document.getElementById("cancelScanBtn").style.display = "none";
 }
