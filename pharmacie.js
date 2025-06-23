@@ -15,12 +15,11 @@ firebase.auth().signInAnonymously().then(() => {
       const d = doc.data();
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <tr>
-       <td>${doc.id}</td>
-       <td>${d.designation ?? "❌"}</td>
-       <td>${d.quantite ?? "❌"}</td>
-       <td>${d.expiration ?? "❌"}</td>
-</tr>
+        <td>${doc.id}</td>
+        <td>${d.designation||""}</td>
+        <td>${d.quantite||0}</td>
+        <td>${d.expiration||""}</td>
+        <td>
           <button onclick="showQR('${doc.id}','${d.designation||""}')">📷</button>
           <button onclick="deleteItem('${doc.id}')">🗑</button>
           <select onchange="transferItem('${doc.id}', this.value)">
