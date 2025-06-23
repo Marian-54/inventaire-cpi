@@ -37,9 +37,9 @@ firebase.auth().signInAnonymously().then(() => {
 document.getElementById("addForm").addEventListener("submit", async e => {
   e.preventDefault();
   const obj = {
-    designation: designation.value,
-    quantite: parseInt(quantite.value),
-    expiration: expiration.value
+    designation: designation.value.trim() || "Sans nom",
+    quantite: parseInt(quantite.value) || 0,
+    expiration: expiration.value || ""
   };
   try {
     await collection.add(obj);
