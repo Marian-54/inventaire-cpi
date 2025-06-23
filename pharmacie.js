@@ -90,9 +90,9 @@ async function demarrerScan() {
   try {
     const result = await codeReader.decodeOnceFromVideoDevice(undefined, "video");
     stopScan();
-    modifierArticle(result.text);
+    modifierArticle(result.text); // Appelle la fonction de mise à jour
   } catch (err) {
-    alert("Erreur ou annulé");
+    alert("Erreur ou annulation");
     stopScan();
   }
 }
@@ -112,7 +112,7 @@ function modifierArticle(id) {
   const nvRef = prompt("Nouvelle référence ?");
   const nvDate = prompt("Nouvelle date de péremption ?");
   const nvQteMin = prompt("Nouvelle quantité minimum ?");
-  if (nvQte !== null) {
+  if (nvQte !== null && nvRef !== null) {
     collection.doc(id).update({
       quantite: parseInt(nvQte),
       reference: nvRef,
