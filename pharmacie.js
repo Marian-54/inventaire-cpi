@@ -81,32 +81,6 @@ function afficherTousQR() {
   });
 }
 
-let codeReader;
-async function demarrerScan() {
-  codeReader = new ZXing.BrowserQRCodeReader();
-  const videoElement = document.getElementById("video");
-  videoElement.style.display = "block";
-  document.getElementById("cancelScanBtn").style.display = "inline-block";
-  try {
-    const result = await codeReader.decodeOnceFromVideoDevice(undefined, "video");
-    stopScan();
-    modifierArticle(result.text); // Appelle la fonction de mise à jour
-  } catch (err) {
-    alert("Erreur ou annulation");
-    stopScan();
-  }
-}
-
-function stopScan() {
-  const videoElement = document.getElementById("video");
-  if (videoElement.srcObject) {
-    videoElement.srcObject.getTracks().forEach(track => track.stop());
-    videoElement.srcObject = null;
-  }
-  videoElement.style.display = "none";
-  document.getElementById("cancelScanBtn").style.display = "none";
-}
-
 function modifierArticle(id) {
   const nvQte = prompt("Nouvelle quantité ?");
   const nvRef = prompt("Nouvelle référence ?");
@@ -134,4 +108,30 @@ function transferer(id, cible) {
       else collection.doc(id).update({ quantite: reste });
     });
   });
+}
+
+let codeReader;
+async function demarrerScan() {
+  codeReader = new ZXing.BrowserQRCodeReader();
+  const videoElement = document.getElementById("video");
+  videoElement.style.display = "block";
+  document.getElementById("cancelScanBtn").style.display = "inline-block";
+  try {
+    const result = await codeReader.decodeOnceFromVideoDevice(undefined, "video");
+    stopScan();
+    modifierArticle(result.text); // Appelle la fonction de mise à jour
+  } catch (err) {
+    alert("Erreur ou annulation");
+    stopScan();
+  }
+}
+
+function stopScan() {
+  const videoElement = document.getElementById("video");
+  if (videoElement.srcObject) {
+    videoElement.srcObject.getTracks().forEach(track => track.stop());
+    videoElement.srcObject = null;
+  }
+  videoElement.style.display = "none";
+  document.getElementById("cancelScanBtn").style.display = "none";
 }
