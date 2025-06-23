@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventaire Sac de Secours</title>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <h1>Inventaire Sac de Secours</h1>
+  <form id="addForm">
+    <input type="text" id="designation" placeholder="Désignation" required/>
+    <input type="number" id="quantite" placeholder="Quantité" required/>
+    <input type="date" id="expiration" placeholder="Expiration"/>
+    <button type="submit">Ajouter</button>
+  </form>
+  <table>
+    <thead><tr><th>ID</th><th>Désignation</th><th>Qté</th><th>Expiration</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <script src="secours.js"></script>
+</body>
+</html>
