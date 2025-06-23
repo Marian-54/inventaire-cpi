@@ -60,6 +60,13 @@ function deleteItem(id) {
   if (confirm("Supprimer ?")) collection.doc(id).delete();
 }
 
+function viderStock() {
+  if (!confirm("Tout effacer ?")) return;
+  collection.get().then(snapshot => {
+    snapshot.forEach(doc => doc.ref.delete());
+  });
+}
+
 function showQR(id) {
   const container = document.getElementById("qrContainer");
   container.innerHTML = "";

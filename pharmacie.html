@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr"><head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inventaire Pharmacie</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
   <script src="https://unpkg.com/@zxing/library@0.18.6"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -13,21 +15,38 @@
   <a href="index.html" class="buttonlink">⬅️ Retour à l’accueil</a>
   <h1>Inventaire Pharmacie</h1>
   <form id="addForm">
-    <input type="text" id="designation" placeholder="Désignation" required>
-    <input type="text" id="reference" placeholder="Référence" required>
-    <input type="number" id="quantite" placeholder="Quantité" required>
-    <input type="number" id="quantite_min" placeholder="Quantité minimum" required>
-    <input type="date" id="expiration" placeholder="Date de péremption">
+    <input type="text" id="designation" placeholder="Désignation" required />
+    <input type="text" id="reference" placeholder="Référence" required />
+    <input type="number" id="quantite" placeholder="Quantité" required />
+    <input type="number" id="quantite_min" placeholder="Quantité minimum" required />
+    <input type="date" id="expiration" placeholder="Date de péremption" />
     <button type="submit">Ajouter</button>
   </form>
+
   <button onclick="demarrerScan()">📷 Scanner un QR code</button>
   <button onclick="afficherTousQR()">📄 Voir tous les QR Codes</button>
+  <button onclick="viderStock()">🧨 Vider le stock</button>
   <div id="qrContainer"></div>
+
   <video id="video" style="display:none;width:100%;max-width:500px;"></video>
   <button id="cancelScanBtn" onclick="stopScan()" style="display:none;">❌ Annuler le scan</button>
+
   <table>
-    <thead><tr><th>ID</th><th>Désignation</th><th>Référence</th><th>Qté</th><th>Qté Min</th><th>Expiration</th><th>QR</th><th>Actions</th></tr></thead>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Désignation</th>
+        <th>Référence</th>
+        <th>Qté</th>
+        <th>Qté Min</th>
+        <th>Péremption</th>
+        <th>QR</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
     <tbody id="tbody"></tbody>
   </table>
+
   <script src="pharmacie.js"></script>
-</body></html>
+</body>
+</html>
